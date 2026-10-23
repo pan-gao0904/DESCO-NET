@@ -1,0 +1,81 @@
+project:
+  name: DUILF-Net-UIEB-FineTune
+  seed: 42
+  output_dir: outputs
+  save_dir: outputs/checkpoints_uieb_ft
+  log_dir: outputs/logs_uieb_ft
+
+data:
+  root: data
+  datasets:
+    train:
+      - UIEB
+    val:
+      - UIEB_R90
+    test:
+      - UIEB_R90
+  image_exts: [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+  crop_size: 256
+  center_crop_test: true
+  hflip_prob: 0.5
+  rotate90_prob: 0.3
+  color_jitter_brightness: 0.1
+  color_jitter_contrast: 0.1
+  color_jitter_saturation: 0.05
+  color_jitter_hue: 0.02
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+
+model:
+  stage1:
+    transmission_min: 0.05
+  stage2:
+    base_channels: 48
+    num_blocks: 4
+
+loss:
+  charbonnier_eps: 1.0e-3
+  lambda_ssim: 0.5
+  lambda_ssim_out: 0.6
+  lambda_tv: 0.005
+
+train:
+  mixed_precision: true
+  grad_clip_norm: 1.0
+  checkpoint_every_epochs: 10
+  image_log_every_epochs: 5
+  ddp:
+    enabled: false
+  optimizer:
+    name: adamw
+    betas: [0.9, 0.999]
+    weight_decay: 1.0e-4
+  phase1:
+    epochs: 50
+    batch_size: 8
+    lr: 1.0e-5
+    scheduler: cosine
+  phase2:
+    epochs: 50
+    batch_size: 24
+    lr: 2.0e-5
+    scheduler: cosine
+  phase3:
+    epochs: 50
+    batch_size: 8
+    lr: 5.0e-6
+    stage1_lr_ratio: 0.1
+    scheduler: cosine
+
+inference:
+  save_stage1: false
+  save_transmission: false
+  save_backscatter: false
+  pad_multiple: 32
+
+eval:
+  y_channel_psnr: false
+  ssim_window_size: 11
+  results_dir: results_uieb_ft
+  baseline_names: ["DUILF-Net-UIEB-FT"]
